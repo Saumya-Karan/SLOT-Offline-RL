@@ -130,7 +130,7 @@ If you use this repository or the associated method in your research, cite the a
 ```bibtex
 @article{slot_offline_rl,
   title={From Demonstrations to Autonomous Navigation: Offline Reinforcement Learning for a Tendon-Driven Soft-Legged Quadruped Robot},
-  author={Saumya Karan and collaborators},
+  authors={Saumya Karan, Debangshu Mounas, Madhu Vadali},
   journal={},
   year={}
 }
