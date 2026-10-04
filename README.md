@@ -129,7 +129,7 @@ If you use this repository or the associated method in your research, cite the a
 
 ```bibtex
 @article{slot_offline_rl,
-  title={Autonomous Navigation of a Soft-Legged Omnidirectional Tetrapod via Offline Behavior-Regularized Double Deep Q-Network},
+  title={From Demonstrations to Autonomous Navigation: Offline Reinforcement Learning for a Tendon-Driven Soft-Legged Quadruped Robot},
   author={Saumya Karan and collaborators},
   journal={},
   year={}
