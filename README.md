@@ -1,357 +1,131 @@
-# SLOT: Autonomous Navigation via Offline Behavior-Regularized DDQN
+# SLOT
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![ROS 2](https://img.shields.io/badge/ROS_2-Humble-blue.svg)](https://docs.ros.org/en/humble/index.html)
-[![PyTorch](https://img.shields.io/badge/PyTorch-Offline_RL-EE4C2C.svg)](https://pytorch.org/)
+<p align="center">
+  <img src="slot.png" alt="SLOT soft-legged omnidirectional tetrapod" width="900">
+</p>
 
-Official code repository for the paper:
+## Soft-Legged Omnidirectional Tetrapod
 
-**"Autonomous Navigation of a Soft-Legged Omnidirectional Tetrapod via Offline Behavior-Regularized Double Deep Q-Network"**
+SLOT is a soft-legged omnidirectional robot research platform. This repository brings together 3D motion planning, offline reinforcement learning, deployment experiments, trajectory analysis, AR overlays, and CAD models.
 
-This repository contains the complete hierarchical navigation pipeline for **SLOT**. The system decouples global spatial planning, using a staged 3D RRT, from local reactive execution, using an offline-trained, purely visual Double DQN policy.
+The main navigation workflow combines a 3D Rapidly-exploring Random Tree (RRT) planner for global trajectories with Double Deep Q-Network (DDQN) components for learned control and obstacle-avoidance experiments.
 
----
-
-## 🗂️ Repository Structure
+## Repository Layout
 
 ```text
 SLOT-Offline-RL/
-│
-├── 1_Global_Planner_3D_RRT/
-│   └── 3D RRT engine for global trajectory generation
-│
-├── 2_AR_Video_Overlays/
-│   └── OpenCV-based AR visualization and trajectory overlays
-│
-├── 3_Robot_Deployment/
-│   └── Jetson deployment code for autonomous navigation
-│
+├── CAD/                         CAD parts and assemblies
+├── Dataset_and_plots/           Datasets, logs, and paper figures
+├── Dynamic_Obstacle_Avoidance/ Dynamic-obstacle deployment code
+├── Global_Planner_3D_RRT/      3D planning and AR overlay code
+├── my_robot_ws/                Robot-control and training workspace
+├── RL/                         Training and data-collection scripts
+├── slot.png                    Project image
 └── README.md
 ```
 
-### `1_Global_Planner_3D_RRT/`
+The main subdirectories contain the following working areas:
 
-Contains the **3D Rapidly-exploring Random Tree (RRT)** engine used to generate smoothed, kinematically feasible global trajectories. The resulting environment maps and trajectories are exported as JSON files for deployment.
+- `CAD/CAD/`: SolidWorks parts and assemblies.
+- `Dataset_and_plots/`: Experiment datasets, logs, and plotting scripts.
+- `Dynamic_Obstacle_Avoidance/`: Dynamic-obstacle deployment code.
+- `Global_Planner_3D_RRT/`: The RRT core, trajectory generators, AR overlays, and generated planner outputs.
+- `my_robot_ws/`: Robot-control utilities and additional training/deployment code.
+- `RL/`: Training, data collection, checkpoints, and RL logs.
 
-### `2_AR_Video_Overlays/`
+## Requirements
 
-Contains OpenCV-based scripts for projecting mathematical RRT paths and emergent RL obstacle-avoidance maneuvers onto real-world deployment footage using homography.
+The exact dependencies depend on the workflow. The planning, plotting, and data-processing scripts use packages such as:
 
-### `3_Robot_Deployment/`
+```bash
+pip install numpy scipy matplotlib opencv-python pandas
+```
 
-Contains the code deployed directly on the **NVIDIA Jetson Xavier NX**. This module integrates:
+The RL and deployment scripts also use PyTorch and the Dynamixel SDK:
 
-- Isaac ROS Visual SLAM
-- Intel RealSense D435i depth camera
-- PyTorch DDQN policy
-- Dynamixel motor control
-- Global waypoint navigation
-- Local reactive obstacle avoidance
+```bash
+pip install torch dynamixel-sdk
+```
 
----
+Robot deployment additionally requires a configured ROS 2 environment, camera drivers, Dynamixel hardware, and the associated runtime configuration. These platform-specific dependencies are not bundled with this repository.
 
-# 🛠️ 1. Installation & Setup
+## Getting Started
 
-## Laptop / PC
-
-The planner and visualization modules require standard Python scientific-computing and computer-vision libraries.
-
-### Clone the Repository
+Clone the repository and create or activate a Python environment before installing dependencies:
 
 ```bash
 git clone https://github.com/Saumya-Karan/SLOT-Offline-RL.git
 cd SLOT-Offline-RL
 ```
 
-### Install Dependencies
+### Generate a 3D trajectory
+
+The planner scripts are in `Global_Planner_3D_RRT/3D_Plots_and_json/` and use the implementation in `Global_Planner_3D_RRT/core/`.
 
 ```bash
-pip install numpy scipy matplotlib opencv-python
+cd Global_Planner_3D_RRT/3D_Plots_and_json
+python plot_traj1.py
 ```
 
----
+The available trajectory generators are `plot_traj1.py` through `plot_traj7.py`. They open a Matplotlib visualization and write their generated map data to the planner output directory.
 
-## Robot: NVIDIA Jetson Xavier NX
+### Generate plots
 
-The deployment pipeline requires **PyTorch** for inference, the **Dynamixel SDK** for motor control, and **ROS 2 Humble** for sensor processing.
-
-### 1. Install ROS 2 and Isaac ROS
-
-Ensure that the following are installed and configured on the Jetson:
-
-- ROS 2 Humble
-- Isaac ROS Visual SLAM
-- Isaac ROS development Docker environment
-- Intel RealSense ROS packages
-
-### 2. Install Python Dependencies
-
-Inside the Jetson environment:
+Run the plotting script from its directory because it reads experiment files using relative paths:
 
 ```bash
-pip install torch torchvision dynamixel-sdk numpy
+cd Dataset_and_plots
+python all_plots.py
 ```
 
-### 3. Grant Serial Port Permissions
+Figures are written to `Dataset_and_plots/plots_for_paper/`.
 
-Grant access to the U2D2 motor controller:
+### Train or collect data
+
+The primary RL scripts are in `RL/`:
 
 ```bash
-sudo chmod a+rw /dev/ttyUSB0
+cd RL
+python train_dqn.py
 ```
 
----
+Review each script's configuration before starting a run. Training and collection may read or update datasets, model checkpoints, and log files in that directory.
 
-## Hardware Configuration
+### Run deployment experiments
 
-### Dynamixel Motor IDs
+Deployment-related code is available in:
 
-Ensure the Dynamixel **XL430-W250-T** motors are configured with the following IDs:
+- `Dynamic_Obstacle_Avoidance/slot_deployment.py`
+- `my_robot_ws/training/SLOT_Deployment_3D_RRT/slot_deployment.py`
 
-| Position | Dynamixel ID |
-|----------|--------------|
-| Front-Left (FL) | `3` |
-| Front-Right (FR) | `2` |
-| Back-Left (BL) | `5` |
-| Back-Right (BR) | `4` |
-
----
-
-# 🚀 2. Step-by-Step Usage Guide
-
-## Phase A: Generating the Global Map
-
-**Run on Laptop / PC**
-
-Before autonomous execution, the 3D topology of the environment must be generated and exported for the robot.
-
-### 1. Navigate to the Planner Directory
+These scripts expect robot hardware, ROS 2 sensor topics, a compatible model checkpoint, and generated map data. Verify the paths and hardware settings in the selected script before running it.
 
 ```bash
-cd 1_Global_Planner_3D_RRT/3D_Mathematical_Plots/
+python Dynamic_Obstacle_Avoidance/slot_deployment.py
 ```
 
-### 2. Generate a Trajectory
+Do not run deployment code on hardware without checking motor IDs, serial-port settings, gait commands, and emergency-stop procedures.
 
-Run the desired trajectory script. For example:
+### Generate AR overlays
+
+The AR scripts are in `Global_Planner_3D_RRT/AR_Video_Overlays/`. They use interactive OpenCV calibration and require the corresponding raw video or image inputs under a local `raw_media/` directory.
 
 ```bash
-python3 plot_traj1.py
+cd Global_Planner_3D_RRT/AR_Video_Overlays
+python overlay_traj1.py
 ```
 
-### 3. Visualize and Export
+## Hardware Notes
 
-A 3D Matplotlib window will open displaying:
+The deployment code includes Dynamixel motor control and ROS 2 subscriptions for camera and odometry data. Serial-port names, baud rates, motor IDs, topic names, model paths, and map paths are defined in the individual scripts and must be adapted to the target robot.
 
-- The generated RRT tree
-- The smoothed global trajectory
-- The environment topology
+## Research Context
 
-Once the visualization window is closed, the script automatically generates:
+This repository supports research on autonomous navigation for soft-legged omnidirectional robots using classical planning and offline reinforcement learning. The checked-in scripts represent several experiments and deployment configurations; they are not a single turnkey production stack.
 
-```text
-outputs/full_3d_map.json
-```
+## Citation
 
-### 4. Transfer Required Files to the Jetson
-
-Transfer the following files to:
-
-```text
-3_Robot_Deployment/
-```
-
-- `full_3d_map.json`
-- `slot_pytorch_ddqn.pth`
-
----
-
-# Phase B: Hardware Bringup
-
-**Run on NVIDIA Jetson Xavier NX**
-
-> **Note:** The Intel RealSense D435i is configured to operate at **640 × 480 resolution and 15 FPS**, with synchronized streams, to reduce USB bus saturation during simultaneous depth sensing and Visual SLAM.
-
-### 1. Start the Isaac ROS Development Container
-
-Open **Terminal 1**:
-
-```bash
-cd ${ISAAC_ROS_WS}/src/isaac_ros_common
-./scripts/run_dev.sh ${ISAAC_ROS_WS}
-```
-
-### 2. Launch the Camera and Visual SLAM Pipeline
-
-Inside the Isaac ROS container:
-
-```bash
-./vslam_launch.sh
-```
-
-This launches the RealSense camera and Isaac ROS Visual SLAM pipeline using the configured parameters required for stable state-space tracking.
-
----
-
-# Phase C: Autonomous Execution
-
-**Run on NVIDIA Jetson Xavier NX**
-
-Once the camera and SLAM pipeline are running, launch the hierarchical navigation supervisor.
-
-### 1. Navigate to the Deployment Directory
-
-Open **Terminal 2**:
-
-```bash
-cd ~/SLOT-Offline-RL/3_Robot_Deployment/
-```
-
-### 2. Start Autonomous Navigation
-
-```bash
-python3 slot_deployment.py
-```
-
-### Expected Behavior
-
-The robot loads the global trajectory from:
-
-```text
-full_3d_map.json
-```
-
-The navigation system then uses Visual SLAM to estimate the robot's state and steer toward the planned waypoints.
-
-During execution, the RealSense depth grid continuously monitors the local environment. If an unmapped obstacle or overhead obstruction is detected, the local **PyTorch DDQN policy** can override the global supervisor and execute an appropriate reactive maneuver, such as:
-
-- Lateral strafing
-- Crawling
-- Local obstacle avoidance
-
-The system additionally uses **proprioceptive action masking and dead-reckoning** to safely clear the robot's physical blind spot before handing control back to the global navigation layer.
-
-This creates a hierarchical navigation architecture in which:
-
-```text
-                 Global 3D RRT
-                       │
-                       ▼
-              Global Waypoints
-                       │
-                       ▼
-              Navigation Supervisor
-                       │
-             ┌─────────┴─────────┐
-             │                   │
-       Normal Operation     Obstacle Detected
-             │                   │
-             ▼                   ▼
-        Follow Path          DDQN Policy
-                                 │
-                                 ▼
-                         Reactive Maneuver
-                                 │
-                                 ▼
-                         Blind-Spot Clearing
-                                 │
-                                 ▼
-                         Return to Global Path
-```
-
----
-
-# 🎥 3. Generating Augmented Reality (AR) Videos
-
-The repository also provides tools for visualizing the generated 3D RRT trajectories and emergent RL behaviors over real-world deployment footage.
-
-## 1. Add Raw Footage
-
-Place the raw `.mp4` recording inside:
-
-```text
-2_AR_Video_Overlays/raw_media/
-```
-
-## 2. Run the Corresponding Overlay Script
-
-For Trajectory 1:
-
-```bash
-cd 2_AR_Video_Overlays/
-python3 overlay_traj1.py
-```
-
-## 3. Compute the Homography
-
-The script will prompt you to select:
-
-1. The four floor corners
-2. The relevant obstacle corners
-
-These points are used to calculate the **homography matrix** and generate the corresponding occlusion mask.
-
-The resulting AR visualization will be saved to:
-
-```text
-2_AR_Video_Overlays/outputs/AR_videos/
-```
-
----
-
-# 🧠 System Overview
-
-The complete SLOT navigation pipeline combines classical planning with learned reactive control:
-
-```text
-                    Environment
-                         │
-                         ▼
-                ┌─────────────────┐
-                │   3D RRT Planner │
-                └────────┬────────┘
-                         │
-                         ▼
-                  Global Trajectory
-                         │
-                         ▼
-                ┌─────────────────┐
-                │ Navigation       │
-                │ Supervisor       │
-                └────────┬────────┘
-                         │
-             ┌───────────┴───────────┐
-             │                       │
-             ▼                       ▼
-       Visual SLAM              Depth Camera
-             │                       │
-             └───────────┬───────────┘
-                         │
-                         ▼
-                Local Environment
-                      State
-                         │
-                         ▼
-                ┌─────────────────┐
-                │ Offline DDQN    │
-                │ Reactive Policy │
-                └────────┬────────┘
-                         │
-                         ▼
-                Reactive Maneuver
-                         │
-                         ▼
-                  Motor Commands
-                         │
-                         ▼
-                       SLOT
-```
-
----
-
-# 📄 Citation
-
-If you use this repository or the associated methodology in your research, please cite:
+If you use this repository or the associated method in your research, cite the accompanying paper:
 
 ```bibtex
 @article{slot_offline_rl,
@@ -361,11 +135,3 @@ If you use this repository or the associated methodology in your research, pleas
   year={}
 }
 ```
-
----
-
-# 📜 License
-
-This project is licensed under the **MIT License**.
-
-See the `LICENSE` file for details.
